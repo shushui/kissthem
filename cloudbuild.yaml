@@ -3,10 +3,12 @@ steps:
   - name: 'node:18'
     entrypoint: npm
     args: ['ci']
+    dir: 'backend'
     
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/kissthem', '.']
+    dir: 'backend'
   
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -35,7 +37,7 @@ steps:
       - '--max-instances'
       - '10'
       - '--set-env-vars'
-      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID,NODE_ENV=production'
       - '--service-account'
       - '123679151422-compute@developer.gserviceaccount.com'
 
