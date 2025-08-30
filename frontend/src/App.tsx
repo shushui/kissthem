@@ -1,25 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { User } from './types';
-import { getCurrentUser, initializeGoogleAuth, renderGoogleSignInButton } from './utils/googleAuth';
-import { authService } from './services/api';
+import { getCurrentUser, initializeGoogleAuth, renderGoogleSignInButton, signOut } from './utils/googleAuth';
+import { authService, imageService, galleryService } from './services/api';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        setIsLoading(true);
         const clientIdResponse = await authService.getOAuthClientId();
+        console.log('Got OAuth client ID:', clientIdResponse.clientId);
+        
         await initializeGoogleAuth(clientIdResponse.clientId);
+        console.log('Google Auth initialized successfully');
         
         const currentUser = getCurrentUser();
         setUser(currentUser);
+        
+        // Load gallery if user is logged in
+        if (currentUser) {
+          loadUserGallery();
+        }
       } catch (err) {
-        setError('Failed to initialize authentication');
         console.error('Auth initialization error:', err);
+        setError(`Authentication failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
         setIsLoading(false);
       }
@@ -37,10 +50,89 @@ function App() {
     }
   }, [isLoading, user]);
 
+  const loadUserGallery = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoadingGallery(true);
+      const response = await galleryService.getUserGallery();
+      console.log('Gallery response:', response);
+      
+      if (response.success && response.photos) {
+        setGalleryImages(response.photos);
+      } else {
+        setGalleryImages([]);
+      }
+    } catch (err) {
+      console.error('Error loading gallery:', err);
+      setGalleryImages([]);
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedImage(file);
+    }
+  };
+
+  const handleProcessImage = async () => {
+    if (!selectedImage || !user) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Convert image to base64
+      const base64Image = await convertFileToBase64(selectedImage);
+      
+      // Call backend API
+      const response = await imageService.processImage({
+        image: base64Image,
+        prompt: "Add cute kisses to this photo"
+      });
+      
+      console.log('Image processing response:', response);
+      
+      if (response.success) {
+        // Reload gallery to show new image
+        await loadUserGallery();
+        setSelectedImage(null);
+        
+        // Show success message
+        alert(response.message || 'Image processed successfully!');
+      } else {
+        alert('Failed to process image. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error processing image:', err);
+      alert('Error processing image. Please check the console for details.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleSignOut = () => {
+    signOut();
+    setUser(null);
+    setGalleryImages([]);
+  };
+
   if (isLoading) {
     return (
       <div className="App">
         <div className="loading">
+          <div className="loading-spinner"></div>
           <h2>Loading Kiss them! 💋</h2>
           <p>Initializing...</p>
         </div>
@@ -52,9 +144,16 @@ function App() {
     return (
       <div className="App">
         <div className="error">
-          <h2>Error</h2>
+          <h2>Authentication Error</h2>
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Retry</button>
+          <div className="error-actions">
+            <button className="btn btn-primary" onClick={() => window.location.reload()}>
+              🔄 Retry
+            </button>
+            <button className="btn btn-outline" onClick={() => setError(null)}>
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -64,9 +163,33 @@ function App() {
     return (
       <div className="App">
         <div className="welcome">
-          <h1>💋 Kiss them!</h1>
-          <p>Upload a photo and let AI add cute kisses to it!</p>
-          <div id="google-sign-in"></div>
+          <div className="welcome-content">
+            <h1>💋 Kiss them!</h1>
+            <p>Upload a photo and let AI add cute kisses to it!</p>
+            <div id="google-sign-in"></div>
+            
+            {/* Fallback for development/testing */}
+            <div className="dev-signin">
+              <p style={{ marginTop: '2rem', fontSize: '0.9rem', opacity: 0.7 }}>
+                Having trouble with Google Sign-In?
+              </p>
+              <button 
+                className="btn btn-outline btn-small"
+                onClick={() => {
+                  // Create a mock user for testing
+                  const mockUser = {
+                    id: 'dev-user-123',
+                    email: 'dev@example.com',
+                    name: 'Developer User',
+                    picture: undefined
+                  };
+                  setUser(mockUser);
+                }}
+              >
+                🧪 Dev Mode Sign-In
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -75,24 +198,99 @@ function App() {
   return (
     <div className="App">
       <header className="header">
-        <h1>💋 Kiss them!</h1>
-        <div className="user-info">
-          <span>Welcome, {user.name}!</span>
-          <button onClick={() => window.location.reload()}>Sign Out</button>
+        <div className="header-content">
+          <h1>💋 Kiss them!</h1>
+          <div className="user-info">
+            <div className="user-profile">
+              {user.picture && <img src={user.picture} alt={user.name} className="user-avatar" />}
+              <span className="user-name">Hi, {user.name}!</span>
+            </div>
+            <button className="btn btn-outline" onClick={handleSignOut}>Sign Out</button>
+          </div>
         </div>
       </header>
       
       <main className="main">
         <div className="upload-section">
-          <h2>Upload Your Photo</h2>
+          <h2>📸 Upload Your Photo</h2>
           <p>Choose a photo and let our AI add cute kisses to it!</p>
-          {/* TODO: Add image upload component */}
+          
+          <div className="upload-area">
+            {!selectedImage ? (
+              <label className="upload-label">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="upload-input"
+                />
+                <div className="upload-content">
+                  <span className="upload-icon">📁</span>
+                  <span>Click to select an image</span>
+                  <span className="upload-hint">or drag and drop</span>
+                </div>
+              </label>
+            ) : (
+              <div className="selected-image">
+                <img src={URL.createObjectURL(selectedImage)} alt="Selected" />
+                <div className="image-actions">
+                  <button className="btn btn-primary" onClick={handleProcessImage} disabled={isProcessing}>
+                    {isProcessing ? 'Processing... 💋' : 'Add Kisses! 💋'}
+                  </button>
+                  <button className="btn btn-outline" onClick={() => setSelectedImage(null)}>
+                    Choose Different Image
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
         <div className="gallery-section">
-          <h2>Your Gallery</h2>
+          <div className="gallery-header">
+            <h2>🖼️ Your Gallery</h2>
+            <button 
+              className="btn btn-outline btn-small" 
+              onClick={loadUserGallery}
+              disabled={isLoadingGallery}
+            >
+              {isLoadingGallery ? 'Loading...' : '🔄 Refresh'}
+            </button>
+          </div>
           <p>View all your kissed photos here!</p>
-          {/* TODO: Add gallery component */}
+          
+          {isLoadingGallery ? (
+            <div className="loading-gallery">
+              <div className="loading-spinner"></div>
+              <p>Loading your gallery...</p>
+            </div>
+          ) : galleryImages.length === 0 ? (
+            <div className="empty-gallery">
+              <span className="empty-icon">🖼️</span>
+              <p>No photos yet. Upload your first image to get started!</p>
+            </div>
+          ) : (
+            <div className="gallery-grid">
+              {galleryImages.map((photo, index) => (
+                <div key={photo.id || index} className="gallery-item">
+                  <img 
+                    src={photo.generatedUrl || photo.originalUrl} 
+                    alt={photo.photoName || `Photo ${index + 1}`} 
+                  />
+                  <div className="gallery-item-overlay">
+                    <div className="photo-info">
+                      <h4>{photo.photoName || `Photo ${index + 1}`}</h4>
+                      <p>{photo.aiResponse || 'Processed with AI'}</p>
+                    </div>
+                    <div className="photo-actions">
+                      <button className="btn btn-small">Download</button>
+                      <button className="btn btn-small btn-outline">Share</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

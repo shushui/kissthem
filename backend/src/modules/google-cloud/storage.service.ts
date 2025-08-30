@@ -1,11 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Storage } from '@google-cloud/storage';
 
 @Injectable()
-export class StorageService {
+export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
-  private readonly storage = new Storage();
+  private storage: Storage;
   private readonly bucketName = 'kissthem-images';
+
+  onModuleInit() {
+    // Configure Storage with project ID for local development
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+    if (projectId) {
+      this.storage = new Storage({
+        projectId: projectId,
+      });
+      this.logger.log(`Storage initialized with project ID: ${projectId}`);
+    } else {
+      this.storage = new Storage();
+      this.logger.warn('No GOOGLE_CLOUD_PROJECT_ID found, using default Storage configuration');
+    }
+  }
 
   async uploadImage(imageData: string, fileName: string): Promise<string> {
     try {

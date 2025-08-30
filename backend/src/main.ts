@@ -1,8 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
+
+// Log environment configuration for debugging
+console.log('🔧 Environment Configuration:');
+console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`   GOOGLE_CLOUD_PROJECT_ID: ${process.env.GOOGLE_CLOUD_PROJECT_ID}`);
+console.log(`   PORT: ${process.env.PORT}`);
+console.log(`   GEMINI_API_KEY: ${process.env.GEMINI_API_KEY ? 'Set' : 'Not Set'}`);
 
 async function bootstrap() {
+  // Set environment for local development
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = 'development';
+  }
+  
   const app = await NestFactory.create(AppModule);
   
   // Enable CORS for local development
@@ -25,5 +41,6 @@ async function bootstrap() {
   console.log(`🔐 Backend API available at: http://localhost:${port}/api`);
   console.log(`🛡️ API endpoints are SECURED with Google OAuth authentication`);
   console.log(`💾 Image storage system enabled with Cloud Storage + Firestore`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
 }
 bootstrap();

@@ -1,11 +1,25 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Firestore } from '@google-cloud/firestore';
 import { Photo } from '../../interfaces/photo.interface';
 
 @Injectable()
-export class FirestoreService {
+export class FirestoreService implements OnModuleInit {
   private readonly logger = new Logger(FirestoreService.name);
-  private readonly firestore = new Firestore();
+  private firestore: Firestore;
+
+  onModuleInit() {
+    // Configure Firestore with project ID for local development
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+    if (projectId) {
+      this.firestore = new Firestore({
+        projectId: projectId,
+      });
+      this.logger.log(`Firestore initialized with project ID: ${projectId}`);
+    } else {
+      this.firestore = new Firestore();
+      this.logger.warn('No GOOGLE_CLOUD_PROJECT_ID found, using default Firestore configuration');
+    }
+  }
 
   async savePhoto(photo: Photo): Promise<void> {
     try {

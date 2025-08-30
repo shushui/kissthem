@@ -95,13 +95,20 @@ export class ImageService {
           let generatedImage = null;
           let aiResponse = "";
           
-          for (const part of content.parts) {
-            if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
-              generatedImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-              this.logger.log(`Gemini "Nano Banana" generated a new image for user ${user.email}!`);
-            } else if (part.text) {
-              aiResponse += part.text;
+          // Handle different response formats more robustly
+          if (content.parts && Array.isArray(content.parts)) {
+            for (const part of content.parts) {
+              if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('image/')) {
+                generatedImage = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+                this.logger.log(`Gemini "Nano Banana" generated a new image for user ${user.email}!`);
+              } else if (part.text) {
+                aiResponse += part.text;
+              }
             }
+          } else {
+            // Handle other response formats
+            this.logger.log(`Unexpected Gemini response format for user ${user.email}:`, content);
+            aiResponse = "AI processed your image successfully!";
           }
           
           if (generatedImage) {
