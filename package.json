@@ -1,45 +1,29 @@
 {
   "name": "kissthem",
   "version": "1.0.0",
-  "description": "A mobile-first web application that uses AI to add kisses to your photos!",
-  "main": "server.js",
+  "description": "Kiss them! - Complete TypeScript + React + NestJS Application",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "frontend": "http-server -p 8000 -c-1",
-    "build": "echo 'No build step required for static site'",
-    "deploy": "echo 'Deploy to your preferred hosting service'"
-  },
-  "keywords": [
-    "ai",
-    "photo-editing",
-    "gemini",
-    "google-oauth",
-    "mobile-first",
-    "web-app"
-  ],
-  "author": "Your Name",
-  "license": "MIT",
-  "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "@google-cloud/secret-manager": "^5.0.0",
-    "@google/genai": "^1.16.0",
-    "google-auth-library": "^9.0.0"
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run start:dev",
+    "dev:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "start:backend": "cd backend && npm run start:prod",
+    "start:frontend": "cd frontend && npm start"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "http-server": "^14.1.1"
+    "concurrently": "^8.0.0"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yourusername/kissthem.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/kissthem/issues"
-  },
-  "homepage": "https://github.com/yourusername/kissthem#readme"
-} 
+  "keywords": [
+    "typescript",
+    "react",
+    "nestjs",
+    "google-cloud",
+    "ai",
+    "photo-editing"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
