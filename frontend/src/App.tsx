@@ -12,6 +12,8 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+  const [isDeletingPhoto, setIsDeletingPhoto] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -90,7 +92,7 @@ function App() {
       // Call backend API
       const response = await imageService.processImage({
         image: base64Image,
-        prompt: "Add cute kisses to this photo"
+        prompt: "Add a cute, romantic kiss to this photo. Make the person look surprised, happy, and delighted - like they just received an unexpected but wonderful surprise!"
       });
       
       console.log('Image processing response:', response);
@@ -126,6 +128,48 @@ function App() {
     signOut();
     setUser(null);
     setGalleryImages([]);
+  };
+
+  const handleDeletePhoto = async (photoId: string) => {
+    if (!window.confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      setIsDeletingPhoto(photoId);
+      await galleryService.deletePhoto(photoId);
+      
+      // Remove the photo from the local state
+      setGalleryImages(prev => prev.filter(photo => photo.id !== photoId));
+      
+      alert('Photo deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting photo:', err);
+      alert('Failed to delete photo. Please try again.');
+    } finally {
+      setIsDeletingPhoto(null);
+    }
+  };
+
+  const handleDeleteAllPhotos = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL your photos? This action cannot be undone and will permanently remove all your images.')) {
+      return;
+    }
+    
+    try {
+      setIsDeletingAll(true);
+      const response = await galleryService.deleteAllPhotos();
+      
+      // Clear the gallery
+      setGalleryImages([]);
+      
+      alert(`Successfully deleted ${response.deletedCount} photos!`);
+    } catch (err) {
+      console.error('Error deleting all photos:', err);
+      alert('Failed to delete all photos. Please try again.');
+    } finally {
+      setIsDeletingAll(false);
+    }
   };
 
   if (isLoading) {
@@ -249,13 +293,24 @@ function App() {
         <div className="gallery-section">
           <div className="gallery-header">
             <h2>🖼️ Your Gallery</h2>
-            <button 
-              className="btn btn-outline btn-small" 
-              onClick={loadUserGallery}
-              disabled={isLoadingGallery}
-            >
-              {isLoadingGallery ? 'Loading...' : '🔄 Refresh'}
-            </button>
+            <div className="gallery-actions">
+              <button 
+                className="btn btn-outline btn-small" 
+                onClick={loadUserGallery}
+                disabled={isLoadingGallery}
+              >
+                {isLoadingGallery ? 'Loading...' : '🔄 Refresh'}
+              </button>
+              {galleryImages.length > 0 && (
+                <button 
+                  className="btn btn-danger btn-small" 
+                  onClick={handleDeleteAllPhotos}
+                  disabled={isDeletingAll}
+                >
+                  {isDeletingAll ? 'Deleting...' : '🗑️ Delete All'}
+                </button>
+              )}
+            </div>
           </div>
           <p>View all your kissed photos here!</p>
           
@@ -285,6 +340,16 @@ function App() {
                     <div className="photo-actions">
                       <button className="btn btn-small">Download</button>
                       <button className="btn btn-small btn-outline">Share</button>
+                      <button 
+                        className="btn btn-small btn-danger" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePhoto(photo.id);
+                        }}
+                        disabled={isDeletingPhoto === photo.id}
+                      >
+                        {isDeletingPhoto === photo.id ? 'Deleting...' : '🗑️'}
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -351,6 +351,12 @@ body {
   gap: 1rem;
 }
 
+.gallery-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .gallery-header h2 {
   margin: 0;
 }
@@ -436,6 +442,12 @@ body {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+  flex-wrap: wrap;
+}
+
+.photo-actions .btn-small {
+  min-width: 60px;
+  justify-content: center;
 }
 
 /* Buttons */
@@ -487,6 +499,18 @@ body {
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   min-height: 36px;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
 }
 
 /* Responsive design */

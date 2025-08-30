@@ -79,7 +79,7 @@ export class ImageService {
         }
       };
 
-      const fullPrompt = request.prompt || "Take this photo and add a cute kiss to it. Generate a new version with the kiss added. Make it look natural and adorable.";
+      const fullPrompt = request.prompt || "Take this photo and add a cute, romantic kiss to it. The person receiving the kiss should look surprised, happy, and delighted - like they just received an unexpected but wonderful surprise! Make the kiss look natural, adorable, and create a magical moment. The person's expression should show pure joy and surprise at receiving this sweet kiss.";
 
       try {
         this.logger.log(`Sending image to Gemini "Nano Banana" model for user ${user.email}...`);
