@@ -21,9 +21,16 @@ async function bootstrap() {
   
   const app = await NestFactory.create(AppModule);
   
-  // Enable CORS for local development
+  // Enable CORS for local development and production
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: [
+      'http://localhost:3000', 
+      'http://localhost:3001',
+      'https://kissthem-frontend.storage.googleapis.com',
+      'https://storage.googleapis.com',
+      'https://kissthem-frontend.web.app',
+      'https://kissthem-frontend.firebaseapp.com'
+    ],
     credentials: true,
   });
   

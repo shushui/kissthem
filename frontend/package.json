@@ -22,7 +22,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:prod": "REACT_APP_API_URL=https://kissthem-123679151422.us-central1.run.app react-scripts build",
+    "build:prod": "REACT_APP_API_URL=https://kissthem-dncqm4eeta-uc.a.run.app react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
